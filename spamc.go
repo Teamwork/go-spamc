@@ -349,17 +349,23 @@ type Report struct {
 
 // String formats the reports like SpamAssassin.
 func (r Report) String() string {
-	table := " pts rule name              description\n"
-	table += "---- ---------------------- --------------------------------------------------\n"
+	table := " pts rule name                        description\n"
+	table += "---- -------------------------------- --------------------------------------------------\n"
 
 	for _, t := range r.Table {
 		leadingSpace := ""
-		if t.Points > 0 {
+		// Only checking if t.Points is >=0 is not enough because sometimes
+		// the score is -0.0 which equals to 0 even if it starts with a `-`
+		if !strings.HasPrefix(fmt.Sprintf("%f", t.Points), "-") {
 			leadingSpace = " "
 		}
 
 		line := fmt.Sprintf("%v%.1f %v", leadingSpace, t.Points, t.Rule)
-		line += strings.Repeat(" ", 28-len(line)) + t.Description + "\n"
+		numberOfSpaces := 38 - len(line)
+		if numberOfSpaces <= 0 {
+			numberOfSpaces = 1
+		}
+		line += strings.Repeat(" ", numberOfSpaces) + t.Description + "\n"
 		table += line
 	}
 
