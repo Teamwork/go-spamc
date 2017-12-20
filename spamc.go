@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/teamwork/utils/mathutil"
@@ -161,21 +160,12 @@ func sizeFromReader(r io.Reader) (int64, error) {
 }
 
 func (c *Client) dial(ctx context.Context) (net.Conn, error) {
-	conn, err := c.dialer.DialContext(ctx, "tcp", c.addr)
+	conn, err := c.dialer(ctx)
 	if err != nil {
 		if conn != nil {
 			conn.Close() // nolint: errcheck
 		}
 		return nil, errors.Wrap(err, "could not connect to spamd")
-	}
-
-	// Set connection timeout
-	if ndial, ok := c.dialer.(*net.Dialer); ok {
-		err = conn.SetDeadline(time.Now().Add(ndial.Timeout))
-		if err != nil {
-			conn.Close() // nolint: errcheck
-			return nil, errors.Wrap(err, "connection to spamd timed out")
-		}
 	}
 
 	return conn, nil

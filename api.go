@@ -33,10 +33,8 @@ type Error struct {
 
 func (e Error) Error() string { return e.msg }
 
-// Dialer to connect to spamd; usually a net.Dialer instance.
-type Dialer interface {
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
-}
+// Dialer to connect to spamd; cf standard functions like `TCPDialer` or `UnixDialer`.
+type Dialer func(context.Context) (net.Conn, error)
 
 // Header for requests and responses.
 type Header map[string]string
@@ -104,22 +102,42 @@ func (h Header) normalizeKey(k string) string {
 	}
 }
 
-// New created a new Client instance.
+// New creates a new Client instance.
 //
-// The addr should be as "host:port"; as dialer most people will want to use
-// net.Dialer:
+// Examples:
 //
-//   New("127.0.0.1:783", &net.Dialer{Timeout: 20 * time.Second})
+//   New(TCPDialer("127.0.0.1:783"))
+//   New(UnixDialer("/path/to/sock.unix"))
+//   New(BuildGenericDialer("127.0.0.1:783", "tcp", time.Second))
 //
-// If the passed dialer is nil then this will be used as a default.
-func New(addr string, d Dialer) *Client {
-	if d == nil {
-		d = &net.Dialer{Timeout: 20 * time.Second}
+func New(d Dialer) *Client {
+	return &Client{dialer: d}
+}
+
+// BuildGenericDialer is a generic method to build a Dialer (cf `New` method)
+func BuildGenericDialer(addr string, proto string, timeout time.Duration) Dialer {
+	dialer := net.Dialer{Timeout: timeout}
+	return func(ctx context.Context) (net.Conn, error) {
+		conn, err := dialer.DialContext(ctx, proto, addr)
+		if err != nil {
+			return conn, err
+		}
+		err = conn.SetDeadline(time.Now().Add(timeout))
+		if err != nil {
+			return conn, err
+		}
+		return conn, nil
 	}
-	return &Client{
-		addr:   addr,
-		dialer: d,
-	}
+}
+
+// TCPDialer creates a TCP Dialer with a 20 seconds timeout (cf `New` method)
+func TCPDialer(addr string) Dialer {
+	return BuildGenericDialer(addr, "tcp", 20*time.Second)
+}
+
+// UnixDialer creates a Unix Dialer with a 20 seconds timeout (cf `New` method)
+func UnixDialer(addr string) Dialer {
+	return BuildGenericDialer(addr, "unix", 20*time.Second)
 }
 
 // Ping returns a confirmation that spamd is alive.

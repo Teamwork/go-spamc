@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"strings"
-	"time"
 )
 
 func Example() {
 	// Connect
-	c := New("127.0.0.1:783", &net.Dialer{
-		Timeout: 20 * time.Second,
-	})
+	c := New(TCPDialer("127.0.0.1:783"))
 	ctx := context.Background()
 
 	msg := strings.NewReader("Subject: Hello\r\n\r\nHey there!\r\n")

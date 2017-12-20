@@ -13,7 +13,7 @@ import (
 var addr = os.Getenv("SPAMC_SA_ADDRESS")
 
 func TestSAPing(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	err := client.Ping(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +21,7 @@ func TestSAPing(t *testing.T) {
 }
 
 func TestSACheck(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	r, err := client.Check(context.Background(), strings.NewReader("\r\nPenis viagra\r\n"), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +35,7 @@ func TestSACheck(t *testing.T) {
 }
 
 func TestSASymbols(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	r, err := client.Symbols(context.Background(), strings.NewReader(""+
 		"Date: now\r\n"+
 		"From: invalid\r\n"+
@@ -55,7 +55,7 @@ func TestSASymbols(t *testing.T) {
 }
 
 func TestSAReport(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	r, err := client.Report(context.Background(), strings.NewReader(""+
 		"Date: now\r\n"+
 		"From: a@example.com\r\n"+
@@ -76,7 +76,7 @@ func TestSAReport(t *testing.T) {
 }
 
 func TestSAProcess(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	r, err := client.Process(context.Background(), strings.NewReader(""+
 		"Date: now\r\n"+
 		"From: a@example.com\r\n"+
@@ -110,7 +110,7 @@ func TestSAProcess(t *testing.T) {
 }
 
 func TestSAHeaders(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	r, err := client.Headers(context.Background(), strings.NewReader(""+
 		"Date: now\r\n"+
 		"From: a@example.com\r\n"+
@@ -144,7 +144,7 @@ func TestSAHeaders(t *testing.T) {
 }
 
 func TestSATell(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 	message := strings.NewReader("Subject: Hello, world!\r\n\r\nTest message.\r\n")
 	r, err := client.Tell(context.Background(), message, Header{}.
 		Set("Message-class", "spam").
@@ -166,7 +166,7 @@ func TestSATell(t *testing.T) {
 
 // Make sure SA works when we send the message without trailing newline.
 func TestSANoTrailingNewline(t *testing.T) {
-	client := New(addr, nil)
+	client := New(TCPDialer(addr))
 
 	r, err := client.Check(context.Background(), strings.NewReader("woot"), nil)
 	if err != nil {
