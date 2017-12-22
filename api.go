@@ -3,6 +3,7 @@ package spamc
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -120,6 +121,21 @@ func TCPDialer(addr string) Dialer {
 // UnixDialer creates a Unix Dialer with a 20 second timeout.
 func UnixDialer(addr string) Dialer {
 	return buildDialer(addr, "unix", 20*time.Second)
+}
+
+// TLSDialer creates a TLS Dialer.
+func TLSDialer(addr string, c *tls.Config) Dialer {
+	timeout := 20 * time.Second
+	dialer := net.Dialer{Timeout: timeout}
+	return func(ctx context.Context) (net.Conn, error) {
+		conn, err := tls.DialWithDialer(&dialer, "tcp", addr, c)
+		if err != nil {
+			return conn, err
+		}
+		err = conn.SetDeadline(time.Now().Add(timeout))
+		return conn, err
+	}
+
 }
 
 // Ping returns a confirmation that spamd is alive.

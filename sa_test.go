@@ -4,6 +4,7 @@ package spamc
 
 import (
 	"context"
+	"crypto/tls"
 	"io/ioutil"
 	"os"
 	"strings"
