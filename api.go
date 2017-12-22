@@ -33,7 +33,7 @@ type Error struct {
 
 func (e Error) Error() string { return e.msg }
 
-// Dialer to connect to spamd; cf standard functions like `TCPDialer` or `UnixDialer`.
+// Dialer to connect to spamd.
 type Dialer func(context.Context) (net.Conn, error)
 
 // Header for requests and responses.
@@ -108,36 +108,18 @@ func (h Header) normalizeKey(k string) string {
 //
 //   New(TCPDialer("127.0.0.1:783"))
 //   New(UnixDialer("/path/to/sock.unix"))
-//   New(BuildGenericDialer("127.0.0.1:783", "tcp", time.Second))
-//
 func New(d Dialer) *Client {
 	return &Client{dialer: d}
 }
 
-// BuildGenericDialer is a generic method to build a Dialer (cf `New` method)
-func BuildGenericDialer(addr string, proto string, timeout time.Duration) Dialer {
-	dialer := net.Dialer{Timeout: timeout}
-	return func(ctx context.Context) (net.Conn, error) {
-		conn, err := dialer.DialContext(ctx, proto, addr)
-		if err != nil {
-			return conn, err
-		}
-		err = conn.SetDeadline(time.Now().Add(timeout))
-		if err != nil {
-			return conn, err
-		}
-		return conn, nil
-	}
-}
-
-// TCPDialer creates a TCP Dialer with a 20 seconds timeout (cf `New` method)
+// TCPDialer creates a TCP Dialer with a 20 second timeout.
 func TCPDialer(addr string) Dialer {
-	return BuildGenericDialer(addr, "tcp", 20*time.Second)
+	return buildDialer(addr, "tcp", 20*time.Second)
 }
 
-// UnixDialer creates a Unix Dialer with a 20 seconds timeout (cf `New` method)
+// UnixDialer creates a Unix Dialer with a 20 second timeout.
 func UnixDialer(addr string) Dialer {
-	return BuildGenericDialer(addr, "unix", 20*time.Second)
+	return buildDialer(addr, "unix", 20*time.Second)
 }
 
 // Ping returns a confirmation that spamd is alive.

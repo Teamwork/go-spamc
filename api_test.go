@@ -362,14 +362,6 @@ func TestTell(t *testing.T) {
 	}
 }
 
-type testDialer struct {
-	conn fakeconn.Conn
-}
-
-func (d *testDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.conn, nil
-}
-
 func newClient(resp string) *Client {
 	conn := fakeconn.New()
 	conn.ReadFrom.WriteString(resp)

@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/teamwork/utils/mathutil"
@@ -55,6 +56,19 @@ var errorMessages = map[int]string{
 	79: "Read timeout",                           // EX_TIMEOUT
 }
 
+// buildDialer is a helper to build a Dialer.
+func buildDialer(addr string, proto string, timeout time.Duration) Dialer {
+	dialer := net.Dialer{Timeout: timeout}
+	return func(ctx context.Context) (net.Conn, error) {
+		conn, err := dialer.DialContext(ctx, proto, addr)
+		if err != nil {
+			return conn, err
+		}
+		err = conn.SetDeadline(time.Now().Add(timeout))
+		return conn, err
+	}
+}
+
 // send a command to spamd.
 func (c *Client) send(
 	ctx context.Context,
@@ -63,8 +77,11 @@ func (c *Client) send(
 	headers Header,
 ) (io.ReadCloser, error) {
 
-	conn, err := c.dial(ctx)
+	conn, err := c.dialer(ctx)
 	if err != nil {
+		if conn != nil {
+			conn.Close() // nolint: errcheck
+		}
 		return nil, errors.Wrapf(err, "could not dial to %v", c.addr)
 	}
 
@@ -157,18 +174,6 @@ func sizeFromReader(r io.Reader) (int64, error) {
 		return 0, errors.Errorf("unknown type: %T", v)
 	}
 
-}
-
-func (c *Client) dial(ctx context.Context) (net.Conn, error) {
-	conn, err := c.dialer(ctx)
-	if err != nil {
-		if conn != nil {
-			conn.Close() // nolint: errcheck
-		}
-		return nil, errors.Wrap(err, "could not connect to spamd")
-	}
-
-	return conn, nil
 }
 
 // The spamd protocol is a HTTP-esque protocol; a response's first line is the
